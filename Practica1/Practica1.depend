@@ -1,0 +1,17 @@
+# depslib dependency file v1.0
+1465678613 source:/home/alejandro/Escritorio/Programacion para Internet/Practica1/main.cpp
+	<iostream>
+	<sys/types.h>
+	<sys/socket.h>
+	<netinet/in.h>
+	<unistd.h>
+	<sstream>
+	<limits>
+	"IPUtil.h"
+
+1465672217 /home/alejandro/Escritorio/Programacion para Internet/Practica1/IPUtil.h
+	<iostream>
+	<vector>
+	<cctype>
+	<algorithm>
+
