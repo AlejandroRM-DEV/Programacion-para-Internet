@@ -7,6 +7,7 @@
 #include <iostream>
 #include <sstream>
 #include <limits>
+#include <cstdio>
 
 #include <sys/types.h>
 #include <sys/socket.h>
@@ -53,21 +54,21 @@ int main() {
 
             conexion = read( sock, buffer, TAMANO_BUFFER );
             if( conexion < 0 ) {
-                cout << "ERROR FATAL" << endl;
+                perror( "ERROR FATAL" );
             } else if( conexion == 0 ) {
-                cout << "ERROR: conexion cerrada" << endl;
+                perror( "ERROR conexion cerrada" );
             } else {
                 buffer[conexion] = 0;
-                cout << "MENSAJE: "<< endl << buffer << endl;
+                cout << "MENSAJE: " << endl << buffer << endl;
             }
-            close( sock );
 
         } else {
-            cout << "ERROR: No se pudo concretar la conexion" << endl;
+            perror( "ERROR No se pudo concretar la conexion" );
         }
+        close( sock );
 
     } else {
-        cout << "ERROR: No se pudo crear el Socket" << endl;
+        perror( "ERROR No se pudo crear el Socket" );
     }
 
     return 0;
