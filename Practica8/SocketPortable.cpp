@@ -3,10 +3,11 @@
 #ifdef _WIN32
 SocketPortable::SocketPortable() {
     WSADATA wsaData;
-    WSAStartup( MAKEWORD( 2, 2 ), &wsaData );
+    WSAStartup( MAKEWORD( 2, 0 ), &wsaData );
+    sockfd = INVALID_SOCKET;
 }
 SocketPortable::~SocketPortable() {
-    closesocket( sockfd );
+    close();
     WSACleanup();
 }
 string SocketPortable::getLastErrorMessage() {
@@ -27,7 +28,7 @@ string SocketPortable::getLastErrorMessage() {
 }
 bool SocketPortable::connect( const struct sockaddr *addr, int addrlen ) {
     if( ::connect( sockfd, addr, addrlen ) != 0 ) {
-        closesocket( sockfd );
+        close();
         return false;
     }
     return true;
@@ -35,17 +36,17 @@ bool SocketPortable::connect( const struct sockaddr *addr, int addrlen ) {
 bool SocketPortable::socket( int domain, int type, int protocol ) {
     sockfd = ::socket( domain, type, protocol );
     if( sockfd == INVALID_SOCKET ) {
-        closesocket( sockfd );
+        close();
         return false;
     }
     return true;
 }
 bool SocketPortable::setNonBlock() {
-    u_long iMode = 0;
-    if( ioctlsocket( sockfd, FIONBIO, &iMode ) != NO_ERROR ) {
-        return false;
+    u_long iMode = 1;
+    if( ioctlsocket( sockfd, FIONBIO, &iMode ) == NO_ERROR ) {
+        return true;
     }
-    return true;
+    return false;
 }
 bool SocketPortable::nonBlockNoError() {
     return WSAGetLastError() == WSAEWOULDBLOCK;
@@ -68,7 +69,7 @@ string SocketPortable::getLastErrorMessage() {
     return strerror( errno );
 }
 bool SocketPortable::connect( const struct sockaddr *addr, socklen_t addrlen ) {
-    if( ::connect( sockfd, addr, addrlen ) != 0 ) {
+    if( ::connect( sockfd, addr, addrlen ) < 0 ) {
         ::close( sockfd );
         return false;
     }
@@ -118,6 +119,7 @@ bool SocketPortable::connect( const char *node, const char *service,
                 break;
             }
         }
+        close();
     }
 
     if ( rp == nullptr ) {

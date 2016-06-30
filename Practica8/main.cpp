@@ -1,7 +1,12 @@
+/*
+*   Alejandro Ramirez Muñoz
+*   213496617
+*   Programacion para Internet - 2016V
+*   Practica #8
+*/
 #include <iostream>
-#include <fstream>
 #include <sstream>
-#include <cstring>
+#include <cstdio>
 #include <sys/time.h>
 
 #include "SocketPortable.h"
@@ -9,32 +14,35 @@
 
 using namespace std;
 
-#define TAMANO_BUFFER 2000
+#define TAMANO_BUFFER 2048
 
 long long milisegundos();
 bool inputError();
 URL* obtenerURL();
-bool realizarPeticionHTTP( URL* url, fstream& temp );
-void procesarRespuestaHTTP( fstream& temp );
+bool realizarPeticionHTTP( URL* url, FILE * temp );
+void procesarRespuestaHTTP( FILE * temp );
 
+//http://entropymag.org/wp-content/uploads/2014/10/outer-space-wallpaper-pictures.jpg
 int main() {
+    // fopen, fread, fwrite para mantener compatibilidad con windows
+    FILE * temp;
     URL* url = obtenerURL();
     if ( url == nullptr ) {
         return -1;
     }
-
-    fstream temp( "tempbuf.dat", fstream::in | fstream::out | fstream::binary | fstream::trunc );
-    if ( temp.is_open() && temp.good() ) {
-        if( realizarPeticionHTTP( url, temp ) ) {
-            procesarRespuestaHTTP( temp );
-        }
-        temp.close();
-    } else {
-        cout << "Error al crear el archivo temporal \"tempbuf.dat\"" << endl;
+    temp = fopen ( "tempbuf.dat", "w+b" );
+    if ( temp == NULL ) {
+        cout << "Error al crear el archivo temporal \"tempbuf.dat\" necesario" << endl;
         return -1;
     }
-
-    return 0;
+    if( realizarPeticionHTTP( url, temp ) ) {
+        procesarRespuestaHTTP( temp );
+        fclose ( temp );
+        return 0;
+    } else {
+        fclose ( temp );
+        return -1;
+    }
 }
 
 URL* obtenerURL() {
@@ -63,102 +71,102 @@ URL* obtenerURL() {
     return url;
 }
 
-bool realizarPeticionHTTP( URL* url, fstream& temp ) {
+bool realizarPeticionHTTP( URL* url, FILE * temp ) {
+    long long milisegundosActuales;
+    char buffer[TAMANO_BUFFER + 1];
+    struct addrinfo hints;
+    int totalBytes;
+    SocketPortable sp;
     string peticion = "GET " + url->ruta + " HTTP/1.1" +
                       "\r\nHost: " + url->host +
                       "\r\nConnection: close\r\n\r\n";
-
-    struct addrinfo hints;
-    long long milisegundosActuales;
-    char buffer[TAMANO_BUFFER + 1];
-    int totalBytes;
-    SocketPortable sp;
 
     memset( &hints, 0, sizeof ( addrinfo ) );
     hints.ai_family = AF_UNSPEC;
     hints.ai_socktype = SOCK_STREAM;
 
-    if( !sp.connect( url->host.c_str(), url->puerto.c_str(), &hints ) ) {
+    if( !sp.connect( url->host.c_str(), url->puerto.c_str(), &hints ) && !sp.setNonBlock() ) {
         cout << sp.getLastErrorMessage() << endl;
         return false;
     }
-    if( !sp.setNonBlock() ) {
-        cout << sp.getLastErrorMessage() << endl;
-        return false;
-    }
-    cout << "Socket listo." << endl << "Enviando peticion. . ." << endl;
-    sp.send( peticion.c_str(), strlen( peticion.c_str() ), 0 );
 
+    cout << "Socket listo." << endl << "Enviando peticion. . ." << endl;
+    sp.send( peticion.c_str(), peticion.length(), 0 );
+
+    cout << "Recibiendo respuesta. . ." << endl;
+    totalBytes = -1;
     milisegundosActuales = milisegundos();
-    cout << "Esperando respuesta. . ." << endl;
-    while ( true ) {
-        if ( ( milisegundos() - milisegundosActuales ) >= 500 ) {
-            totalBytes = sp.recv( buffer, TAMANO_BUFFER, 0 );
+    while ( totalBytes != 0 ) {
+        if ( ( milisegundos() - milisegundosActuales ) >= 50 ) {
+            totalBytes = sp.recv( ( char* )&buffer, TAMANO_BUFFER, 0 );
             if ( totalBytes < 0 ) {
-                if ( sp.nonBlockNoError() ) {
-                    cout << ". " << std::flush;
-                } else {
+                if ( !sp.nonBlockNoError() ) {
                     perror( "ERROR FATAL" );
                     return false;
                 }
-            } else if ( totalBytes == 0 ) {
-                cout << "Conexion cerrada" << endl;
-                break;
-            } else {
+            } else if ( totalBytes > 0 ) {
                 buffer[totalBytes] = 0;
-                temp.write( ( char* )&buffer, totalBytes );
+                fwrite( buffer, sizeof( char ), totalBytes, temp );
             }
+            cout << ". " << std::flush;
             milisegundosActuales = milisegundos();
         }
     }
+    cout << "Conexion cerrada" << endl;
     sp.close();
+    fflush( temp );
     return true;
 }
 
-void procesarRespuestaHTTP( fstream& temp ) {
-    string respuesta, aux, codigo, codigoDesc, archivoNombre;
-    char buffer[TAMANO_BUFFER + 1];
-    char resp;
-    size_t pos;
+void procesarRespuestaHTTP( FILE * temp ) {
+    string respuesta, aux, codigo, descripcionCodigo, archivoNombre;
+    size_t offsetTemp, offsetArchivo;
+    char buffer[TAMANO_BUFFER];
+    char guardar;
+    FILE * archivo;
     bool finHead = false;
 
-    temp.clear();
-    temp.seekg( 0, ios::beg );
+    fseek( temp, 0, SEEK_SET );
     do {
-        temp.read( ( char* ) &buffer, sizeof( buffer ) );
-        aux = buffer ;
-        pos = aux.find( "\r\n\r\n" );
-        if ( pos == string::npos ) {
+        fread( buffer, sizeof( char ), TAMANO_BUFFER, temp );
+        aux = buffer;
+        offsetTemp = aux.find( "\r\n\r\n" );
+        if ( offsetTemp == string::npos ) {
             respuesta += aux;
         } else {
-            respuesta += aux.substr( 0, pos );
+            respuesta += aux.substr( 0, offsetTemp );
             finHead = true;
         }
     } while ( !finHead );
 
-    temp.clear();
-    temp.seekg( pos + 4, ios::beg ); // +4 "\r\n\r\n"
+    fseek( temp, offsetTemp + 4, SEEK_SET ); // +4 ( \r\n\r\n )
 
     istringstream issRespuesta ( respuesta );
-    issRespuesta >> aux >> codigo >> codigoDesc;
+    issRespuesta >> aux >> codigo >> descripcionCodigo;
 
     if ( codigo == "200" ) {
         do {
             cout << "Desea guardar el archivo? (S/N): ";
-            cin >> resp;
-        } while ( inputError() );
-        if ( resp == 'S' || resp == 's' ) {
+            cin >> guardar;
             cin.ignore( numeric_limits<streamsize>::max(), '\n' );
+        } while ( inputError() || ( guardar != 'S' && guardar != 's' && guardar != 'N' &&
+                                    guardar != 'n' ) );
+        if ( guardar == 'S' || guardar == 's' ) {
             do {
                 cout << "Ingresa el nombre del archivo: ";
                 getline( cin, archivoNombre );
-            } while ( inputError() );
+            } while ( inputError() || archivoNombre.empty() );
 
             cout << "Guardando. . . " << endl;
-            ofstream ofs( archivoNombre.c_str(), ios::binary );
-            if ( ofs.is_open() && ofs.good() ) {
-                ofs << temp.rdbuf();
-                ofs.close();
+            archivo = fopen ( archivoNombre.c_str(), "wb" );
+            if ( archivo != NULL ) {
+                offsetArchivo = fread( buffer, sizeof( char ), TAMANO_BUFFER, temp );
+                while( offsetArchivo == TAMANO_BUFFER ) {
+                    fwrite( buffer, sizeof( char ), TAMANO_BUFFER, archivo );
+                    offsetArchivo = fread( buffer, sizeof( char ), TAMANO_BUFFER, temp );
+                }
+                fwrite( buffer, sizeof( char ), offsetArchivo, archivo );
+                fclose ( archivo );
             } else {
                 cout << "No es posible guardar el archivo" << endl;
             }
@@ -166,7 +174,7 @@ void procesarRespuestaHTTP( fstream& temp ) {
             cout << "Saliendo. . ." << endl;
         }
     } else {
-        cout << "ERROR: " << codigo << " " << codigoDesc << endl;
+        cout << "ERROR: " << codigo << " " << descripcionCodigo << endl;
     }
 }
 
