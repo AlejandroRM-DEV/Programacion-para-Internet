@@ -62,14 +62,14 @@ int SocketPortable::send( const char *buf, int len, int flags ) {
 #else
 SocketPortable::SocketPortable() {}
 SocketPortable::~SocketPortable() {
-    close();
+    ::close( sockfd );
 }
 string SocketPortable::getLastErrorMessage() {
-    return strerror(errno);
+    return strerror( errno );
 }
 bool SocketPortable::connect( const struct sockaddr *addr, socklen_t addrlen ) {
     if( ::connect( sockfd, addr, addrlen ) != 0 ) {
-        close();
+        ::close( sockfd );
         return false;
     }
     return true;
@@ -77,7 +77,7 @@ bool SocketPortable::connect( const struct sockaddr *addr, socklen_t addrlen ) {
 bool SocketPortable::socket( int domain, int type, int protocol ) {
     sockfd = ::socket( domain, type, protocol );
     if( sockfd < 0 ) {
-        close();
+        ::close( sockfd );
         return false;
     }
     return true;
@@ -113,13 +113,11 @@ bool SocketPortable::connect( const char *node, const char *service,
     }
 
     for ( rp = res; rp != nullptr; rp = rp->ai_next ) {
-        if ( !socket( rp->ai_family, rp->ai_socktype, rp->ai_protocol ) ) {
-            continue;
+        if ( socket( rp->ai_family, rp->ai_socktype, rp->ai_protocol ) ) {
+            if ( connect( rp->ai_addr, rp->ai_addrlen ) ) {
+                break;
+            }
         }
-        if ( !connect( rp->ai_addr, rp->ai_addrlen ) ) {
-            continue;
-        }
-        break;
     }
 
     if ( rp == nullptr ) {

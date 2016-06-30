@@ -22,11 +22,17 @@ int main() {
     if ( url == nullptr ) {
         return -1;
     }
-    fstream temp( "temp.dat", fstream::in | fstream::out | fstream::binary | fstream::trunc );
-    if( realizarPeticionHTTP( url, temp ) ) {
-        procesarRespuestaHTTP( temp );
+
+    fstream temp( "tempbuf.dat", fstream::in | fstream::out | fstream::binary | fstream::trunc );
+    if ( temp.is_open() && temp.good() ) {
+        if( realizarPeticionHTTP( url, temp ) ) {
+            procesarRespuestaHTTP( temp );
+        }
+        temp.close();
+    } else {
+        cout << "Error al crear el archivo temporal \"tempbuf.dat\"" << endl;
+        return -1;
     }
-    temp.close();
 
     return 0;
 }
@@ -150,9 +156,11 @@ void procesarRespuestaHTTP( fstream& temp ) {
 
             cout << "Guardando. . . " << endl;
             ofstream ofs( archivoNombre.c_str(), ios::binary );
-            if ( ofs.good() ) {
+            if ( ofs.is_open() && ofs.good() ) {
                 ofs << temp.rdbuf();
                 ofs.close();
+            } else {
+                cout << "No es posible guardar el archivo" << endl;
             }
         } else {
             cout << "Saliendo. . ." << endl;
