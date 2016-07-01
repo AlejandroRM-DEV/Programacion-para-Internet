@@ -21,7 +21,6 @@ using namespace std;
 #include <unistd.h>
 #include <fcntl.h>
 #include <cstring>
-#include <arpa/inet.h> // inet_addr
 #endif
 
 class SocketPortable {
@@ -45,21 +44,23 @@ public:
     bool connect( const struct sockaddr *addr, int addrlen );
     int recv( char *buf, int len, int flags );
     int send( const char *buf, int len, int flags );
+    bool setsockopt( int level, int optname, const void *optval, int optlen ) ;
+    bool bind( const struct sockaddr *addr, int addrlen ) ;
+    int recvfrom( char *buf, int len, int flags, struct sockaddr *src_addr, int *addrlen ) ;
 #else
+    bool setsockopt( int level, int optname, const void *optval, socklen_t optlen );
+    bool bind( const struct sockaddr *addr, socklen_t addrlen );
+    ssize_t recvfrom( void *buf, size_t len, int flags, struct sockaddr *src_addr,
+                      socklen_t *addrlen );
     bool connect( const struct sockaddr *addr, socklen_t addrlen );
     ssize_t recv( void *buf, size_t len, int flags );
     ssize_t send( const void *buf, size_t len, int flags );
 #endif
-    bool setsockopt( int level, int optname, const void *optval, socklen_t optlen ) {
-        return ::setsockopt( sockfd, level, optname, optval, optlen ) >= 0 ;
-    }
-    bool bind( const struct sockaddr *addr, socklen_t addrlen ) {
-        return ::bind( sockfd, addr, addrlen ) >= 0 ;
-    }
-    ssize_t recvfrom( void *buf, size_t len, int flags,
-                      struct sockaddr *src_addr, socklen_t *addrlen ) {
-        return ::recvfrom( sockfd, buf, len, flags, src_addr, addrlen );
-    }
 };
+
+#ifdef __WIN32
+int inet_pton( int af, const char *src, void *dst ) ;
+const char *inet_ntop( int af, const void *src, char *dst, socklen_t size );
+#endif // __WIN32
 
 #endif // SOCKETPORTABLE_H_INCLUDED
