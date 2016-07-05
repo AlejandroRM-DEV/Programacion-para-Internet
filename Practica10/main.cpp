@@ -1,3 +1,9 @@
+/*
+*   Alejandro Ramirez Muñoz
+*   213496617
+*   Programacion para Internet - 2016V
+*   Practica #10
+*/
 #include <iostream>
 #include <cstring>
 #include <cstdint>
@@ -68,9 +74,6 @@ int main() {
         if ( totalBytes < 0 ) {
             cout << sp.getLastErrorMessage() << endl;
             return -1;
-        } else if( totalBytes == 0 ) {
-            cout << "Conexion cerrada" << endl;
-            break;
         }
         buffer[totalBytes] = 0;
         inet_ntop(AF_INET,  ( struct sockaddr * ) &addr, ip, INET_ADDRSTRLEN);

@@ -1,0 +1,30 @@
+# depslib dependency file v1.0
+1467709036 source:c:\users\alesito\documents\programacion\cpp\listadoftp\main.cpp
+	<iostream>
+	<sstream>
+	<cstring>
+	"SocketPortable.h"
+	"URLParser.h"
+
+1467688263 c:\users\alesito\documents\programacion\cpp\listadoftp\socketportable.h
+	<iostream>
+	<winsock2.h>
+	<ws2tcpip.h>
+	<sys/types.h>
+	<sys/socket.h>
+	<netdb.h>
+	<unistd.h>
+	<fcntl.h>
+	<cstring>
+
+1467162025 c:\users\alesito\documents\programacion\cpp\listadoftp\urlparser.h
+	<iostream>
+	<algorithm>
+	<deque>
+
+1467160778 source:c:\users\alesito\documents\programacion\cpp\listadoftp\urlparser.cpp
+	"URLParser.h"
+
+1467689315 source:c:\users\alesito\documents\programacion\cpp\listadoftp\socketportable.cpp
+	"SocketPortable.h"
+
