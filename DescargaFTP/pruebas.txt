@@ -1,0 +1,2 @@
+anonymous:1234@ftp.debian.org/debian/ls-lR.gz
+anonymous:1234@ftp.debian.org/debian/README.html
