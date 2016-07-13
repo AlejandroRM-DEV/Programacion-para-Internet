@@ -13,7 +13,6 @@
 #include "URLParser.h"
 
 #define TAMANO_BUFFER 2048
-#define NIVEL_PROFUNDIDAD 3
 
 #define RESPUESTA_INESPERADA -2
 
@@ -196,17 +195,14 @@ int recibir( SocketPortable &socket, FILE *archivo ) {
 
     do {
         resultado = socket.recv( buffer, TAMANO_BUFFER, 0 );
-        if( resultado == 0 ) {
-            cout << "Conexion cerrada: canal de datos" << endl;
-            return 0;
-        } else if ( resultado < 0 ) {
+        if ( resultado < 0 ) {
             cout << "Error canal de datos" << socket.getLastErrorMessage() << endl;
             return -1;
         } else {
             buffer[resultado] = 0;
             fwrite( buffer, sizeof( char ), resultado, archivo );
         }
-    } while( resultado == TAMANO_BUFFER );
+    } while( resultado != 0 );
 
     delete buffer;
     return resultado;
@@ -254,6 +250,14 @@ int descargar( SocketPortable &control, string ruta, string nomArchivo )throw ( 
         cout << datos.getLastErrorMessage() << endl;
         datos.close();
         return -1;
+    }
+
+    comando = C_STR( "TYPE I\r\n" );
+    if( !( codigo = control.send( comando.c_str(), comando.length(), 0 ) ) ) throw codigo;
+    if( !( codigo = recibir( control ) ) ) throw codigo;
+    switch( codigo ) {
+    case 200: break;
+    case 500: case 501: case 504: case 421: case 530: throw RESPUESTA_INESPERADA;
     }
 
     comando = C_STR( "RETR " << ruta << "\r\n" );

@@ -29,3 +29,33 @@
 1467160778 source:c:\users\alesito\documents\programacion\cpp\descargaftp\urlparser.cpp
 	"URLParser.h"
 
+1467689315 source:c:\users\alesito\documents\github\programacion_para_internet\descargaftp\socketportable.cpp
+	"SocketPortable.h"
+
+1467688263 c:\users\alesito\documents\github\programacion_para_internet\descargaftp\socketportable.h
+	<iostream>
+	<winsock2.h>
+	<ws2tcpip.h>
+	<sys/types.h>
+	<sys/socket.h>
+	<netdb.h>
+	<unistd.h>
+	<fcntl.h>
+	<cstring>
+
+1467160778 source:c:\users\alesito\documents\github\programacion_para_internet\descargaftp\urlparser.cpp
+	"URLParser.h"
+
+1467162025 c:\users\alesito\documents\github\programacion_para_internet\descargaftp\urlparser.h
+	<iostream>
+	<algorithm>
+	<deque>
+
+1468260660 source:c:\users\alesito\documents\github\programacion_para_internet\descargaftp\main.cpp
+	<iostream>
+	<sstream>
+	<cstring>
+	<cstdio>
+	"SocketPortable.h"
+	"URLParser.h"
+
